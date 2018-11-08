@@ -1,44 +1,18 @@
-// var captivepolicy = require('../models/notifyApprovemodels')
-
-// // var hold = require('../models/hold')
-// var bcSdk = require('../fabcar/query');
-// exports.getusernotification = () => {
-//     return new Promise(async (resolve, reject) => {
-//         captivepolicy.find({})
-//         bcSdk.getpolicy1({
-//             // userId: userId
-//             policyid:policyid
-
-//         })
-
-//             .then(result => {
-//                 console.log("len", result)
-//                 resolve({
-//                     "status": 200,
-//                     captivepolicydata: result
-//                 })
-//             })
-//         console.log("arjun",result)
-
-
-//     })
-// }
 'use strict';
 var bcSdk = require('../fabcar/query');
 
 
-exports.getusernotification = (startKey, endKey,decreasecount) => {
+exports.UnderwriterNotification =   (startKey, endKey) => {
 
     return new Promise((resolve, reject) => {
         console.log("startKey---", startKey);
         console.log("endKey---", endKey);
-        console.log("entering into readAllrequest function.......!",decreasecount)
+        console.log("entering into readAllrequest function.......!")
 
         bcSdk
             .getpatientdetails({
                 startKey: startKey,
-                endKey: endKey,
-                decreasecount:decreasecount
+                endKey: endKey
             })
 
             .then((requestarray) => {
@@ -70,3 +44,4 @@ exports.getusernotification = (startKey, endKey,decreasecount) => {
             })
     })
 };
+

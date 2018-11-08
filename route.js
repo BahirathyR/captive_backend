@@ -32,12 +32,19 @@ var notification = require('./functions/notification')
 var captivePolicy = require('./functions/captivePolicy')
 var notifypost = require('./functions/notifypost')
 var notifyApprove = require('./functions/notifyApprove')
+var updatetpaapprove = require('./functions/updatetpaapprove')
+var updatetpareject = require('./functions/updatetpareject')
 var getusernotification = require('./functions/getusernotification')
 var count = 0;
 var count1 = 0;
+var count2 = 0;
+var count3 = 0;
+var UnderwriterNotification = require('./functions/UnderwriterNotification')
 const reguser = require('./models/registerInsurance');
 var same = require('./functions/samerating')
 var rating = 5;
+var decreasecount;
+
 
 module.exports = router => {
 
@@ -47,8 +54,10 @@ module.exports = router => {
     router.post('/submitClaim', cors(), async function (req, res) {
         var submitID = "";
         var policyid = req.body.policyid;
-        var AmountPayerWouldPay = req.body.AmountPayerWouldPay;
+        var claimAmount = req.body.claimAmount;
         var s = req.body
+         count3=count3+1
+        console.log("count3-submitclaim",count3)
         var keys = [];
         for (var k in s) keys.push(k);
         var r = Object.values(s);
@@ -74,7 +83,7 @@ module.exports = router => {
 
         if (fieldvalid == 0) {
 
-            await contractJs.createContract(s, submitID, policyid)
+            await contractJs.createContract(s, submitID, policyid,count3)
             //(NAME, AGE, HospitalName, DOA, REF_DOC, IPD_No, MLC, SEX, DOD, DAIGONIS, Cheif_Complaints_On_Admission, Past_History_with_Allergy, Personal_History, Family_History, Menstrual_History, Obstretric_History, Genral_Examination, Systematic_Examination, Investigations, BaBys_Details, Course_in_Hospital_And_condition, Treatment_Given, Treatment_Adviced, Follow_Up_Visit, Procedure_done, submitID, status, AmountPayerWouldPay, policyid)
             var userId = req.body.policyid;
             console.log("userId", userId);
@@ -113,7 +122,7 @@ module.exports = router => {
                 var AmountPayerWouldPay = rs[0].result;
             //}
             console.log("claimamt", AmountPayerWouldPay)
-            await autotpa.autotpa(s, AmountPayerWouldPay, AmountPayerWouldPay, submitID)
+            await autotpa.autotpa(s, AmountPayerWouldPay, claimAmount, submitID)
 
             res.send({
                 "submitID": submitID,
@@ -249,7 +258,7 @@ module.exports = router => {
     //     console.log("patiendata", result1.docs[0].Records.patientData)
  
  
-    //     updatetpa.updatetpa(patientData, submitID, status, message, AmountuserHavetopay, AmountPayerWouldPay)
+    //     updatetpa.updatetpa( submitID, status, message, AmountuserHavetopay, AmountPayerWouldPay)
     //         .then(result => {
     //             console.log(result)
     //             res.status(200).json({
@@ -266,13 +275,22 @@ module.exports = router => {
 //==========================================================================================
     router.post('/autoapproveclaim', cors(), async function (req, res) {
       
+
+        
         var submitID = req.body.submitID;
-        var groupID = req.body.groupID;
+        console.log(submitID);
+        // var groupID = req.body.groupID;
+        // console.log(groupID);
         var AmountPayerWouldPay = req.body.AmountPayerWouldPay;
+        console.log(AmountPayerWouldPay);
         var AmountuserHavetopay = req.body.AmountuserHavetopay;
+        console.log(AmountuserHavetopay);
         var message = req.body.message;
+        console.log(message);
         var status = req.body.status;
-       
+       console.log(status);
+       count2 = count2 + 1
+       console.log("count2", count2)
         // var submitID = req.body.submitID;
         //     var status = req.body.status;
         //     var message = req.body.message;
@@ -280,16 +298,17 @@ module.exports = router => {
         //     var AmountPayerWouldPay = req.body.AmountPayerWouldPay;
 
 
-        //  var result1 = await validate.validate(submitID)
-        //  //var rating = result1.docs[0].Records.Groupdetails.Rating
-        var result1 = await validate.validate(submitID)
+         var result1 = await validate.validate(submitID)
+        //  console.log("result1", result1 )
+        //  var rating = result1.docs[0].Records.Groupdetails.Rating
+        // var result1 = await validate.validate(submitID)
             var patientData = result1.docs[0].Records.patientData
         if(status=="Approved"){
             rating  = rating-0.5;
             // getrating = rating
             console.log("Ratings",rating)
          //console.log("patiendata", result1.docs[0].Records.Groupdetails.Rating)
-        updatetpa.updatetpa(patientData,submitID,groupID, AmountPayerWouldPay, AmountuserHavetopay, message, status,rating)
+        updatetpa.updatetpa(patientData,submitID, AmountPayerWouldPay, AmountuserHavetopay, message, status,rating,count2)
             .then(result => {
                 console.log(result)
                 res.status(200).json({
@@ -304,7 +323,7 @@ module.exports = router => {
             // })
         }
         else{
-            same.same(patientData,submitID,groupID, AmountPayerWouldPay, AmountuserHavetopay, message, status)
+            same.same(patientData,submitID, AmountPayerWouldPay, AmountuserHavetopay, message, status,count2)
                 .then(result => {
                     console.log(result)
                     res.status(200).json({
@@ -313,10 +332,10 @@ module.exports = router => {
                 }).catch(err => res.status(err.status).json({
                     message: err.message
                 }))
-                // .then(result => {
-                //     console.log("result....", result)
+                .then(result => {
+                    console.log("result....", result)
      
-                // }) 
+                }) 
     
         }
     });
@@ -826,10 +845,91 @@ router.post('/getGroupName', async (req, res) => {
 
     });
 
+//================================================================================
+
+router.get("/UnderwriterNotification", cors(), (req, res) => {
+
+    var startKey = 'FGI000';
+    console.log("startKey", startKey);
+    var endKey = 'FGII999';
+    console.log("endKey--", endKey);
+
+    UnderwriterNotification.UnderwriterNotification(startKey, endKey)
+        .then(function (result) {
+
+            console.log("  result.query1234..>>>", result.query);
+            console.log(" UnderwriterNotification", result.query);
+            res.status(result.status).json({
+                message: result.query
+            })
+        })
+        .catch(err => res.status(err.status).json({
+            message: err.message
+        }));
+
+
+});
+
 
 
 
     //======================================Notify create policy for captive insurance Start===============================================//
+    // router.post('/selectPolicy', cors(), (req, res) => {
+    //     console.log("UI", req.body);
+
+    //     const policyid = req.body.policyid;
+    //     console.log(policyid);
+    //     const policyName = req.body.policyName;
+    //     console.log(policyName);
+    //     const policycatagory = req.body.policycatagory;
+    //     console.log(policycatagory);
+
+    //     const policypercentage = req.body.policypercentage;
+    //     console.log(policypercentage);
+
+    //     const rules = req.body.rules;
+    //     console.log(rules);
+
+    //     const inputradio = req.body.inputradio;
+    //     console.log("inputradio", inputradio);
+
+    //     const status = "Initiated";
+    //     console.log("Status..<<<", status);
+
+    //     count = count + 1
+    //     console.log("count", count)
+
+    //     if (!policyid || !policyName || !policycatagory || !policypercentage || !rules || !inputradio || !status || !count) {
+    //         res.status(400)
+    //             .json({
+    //                 message: 'Invalid Request !'
+    //             });
+
+    //     } else {
+
+    //         notifypost.notifypost(policyid, policyName, policycatagory, policypercentage, rules, inputradio, status, count)
+    //             .then(result => {
+
+                  
+    //                 console.log("result....123>>>", result);
+    //                 res.status(result.status).json({
+    //                     result: result,
+
+    //                 })
+    //             })
+    //                     .catch(err => res.status(err.status).json({
+    //                         message: err.message
+    //                     }).json({
+    //                         status: err.status
+    //                     }));
+
+
+                
+
+
+    //     }
+    // });
+    //Start===============================================//
     router.post('/selectPolicy', cors(), (req, res) => {
         console.log("UI", req.body);
 
@@ -849,13 +949,16 @@ router.post('/getGroupName', async (req, res) => {
         const inputradio = req.body.inputradio;
         console.log("inputradio", inputradio);
 
+        const registername = req.body.registername;
+        console.log("registername", registername);
+
         const status = "Initiated";
         console.log("Status..<<<", status);
 
         count = count + 1
         console.log("count", count)
 
-        if (!policyid || !policyName || !policycatagory || !policypercentage || !rules || !inputradio || !status || !count) {
+        if (!policyid || !policyName || !policycatagory || !policypercentage || !rules || !inputradio || !registername || !status || !count) {
             res.status(400)
                 .json({
                     message: 'Invalid Request !'
@@ -863,28 +966,31 @@ router.post('/getGroupName', async (req, res) => {
 
         } else {
 
-            notifypost.notifypost(policyid, policyName, policycatagory, policypercentage, rules, inputradio, status, count)
+            notifypost.notifypost(policyid, policyName, policycatagory, policypercentage, rules, inputradio, registername, status, count)
                 .then(result => {
 
-                  
+
                     console.log("result....123>>>", result);
                     res.status(result.status).json({
-                        result: result,
+                        result: result
 
                     })
                 })
-                        .catch(err => res.status(err.status).json({
-                            message: err.message
-                        }).json({
-                            status: err.status
-                        }));
+                .catch(err => res.status(err.status).json({
+                    message: err.message
+                }).json({
+                    status: err.status
+                }));
 
 
-                
+
 
 
         }
     });
+
+
+    //======================================Notify create policy for captive insurance END===============================================//
 
 
     //======================================Notify create policy for captive insurance END===============================================//
@@ -944,21 +1050,25 @@ router.post('/getGroupName', async (req, res) => {
     router.post('/notifyApprove', cors(), (req, res) => {
         console.log("UI", req.body);
 
-        const policyid = req.body.policyid;
+        var policyid = req.body.policyid;
         console.log(policyid);
-        const policyName = req.body.policyName;
+        var policyName = req.body.policyName;
         console.log(policyName);
-        const policycatagory = req.body.policycatagory;
+        var policycatagory = req.body.policycatagory;
         console.log(policycatagory);
 
-        const policypercentage = req.body.policypercentage;
+        var policypercentage = req.body.policypercentage;
         console.log(policypercentage);
 
-        const rules = req.body.rules;
+        var rules = req.body.rules;
         console.log(rules);
 
-        const inputradio = req.body.inputradio;
+       
+        var inputradio = req.body.inputradio;
         console.log("inputradio", inputradio);
+
+        const registername = req.body.registername;
+       console.log("registername", registername);
 
         const status = "Approved";
         console.log("Status..<<<", status);
@@ -966,23 +1076,21 @@ router.post('/getGroupName', async (req, res) => {
         count1 = count1 + 1
         console.log("count", count1)
 
-        if (!policyid || !policyName || !policycatagory || !policypercentage || !rules || !inputradio || !status || !count1) {
+        if (!policyid || !policyName || !policycatagory || !policypercentage || !rules  || !inputradio || !status || !count1 || !registername) {
             res.status(400)
                 .json({
                     message: 'Invalid Request !'
                 });
 
         } else {
-            updatetpa.updatetpa( status,policyid, policyName, policycatagory, policypercentage, rules, inputradio, count1)
+            updatetpaapprove.updatetpaapprove( policyid, policyName, policycatagory, policypercentage, rules, inputradio, status, count1,registername)
             .then(result => {
                 console.log(result)
-                res.status(200).json({
+                res.send({
                     message: "Details updated successfully",
                     result:result
                 });
-            }).catch(err => res.status(err.status).json({
-                message: err.message
-            }))
+            })
             // .then(result => {
             //     console.log("result....", result)
 
@@ -1013,7 +1121,150 @@ router.post('/getGroupName', async (req, res) => {
 
 
     //======================================Notify Approve for captive insurance END===============================================//
-//============================GET COUNT START==========================================
+
+    // router.post('/notifyReject', cors(), (req, res) => {
+    //     console.log("UI", req.body);
+
+    //     const policyid = req.body.policyid;
+    //     console.log(policyid);
+    //     const policyName = req.body.policyName;
+    //     console.log(policyName);
+    //     const policycatagory = req.body.policycatagory;
+    //     console.log(policycatagory);
+
+    //     const policypercentage = req.body.policypercentage;
+    //     console.log(policypercentage);
+
+    //     const rules = req.body.rules;
+    //     console.log(rules);
+
+       
+    //     const inputradio = req.body.inputradio;
+    //     console.log("inputradio", inputradio);
+
+    //     const status = "Rejected";
+    //     console.log("Status..<<<", status);
+
+    //     count1 = count1 + 1
+    //     console.log("count", count1)
+
+    //     if (!policyid || !policyName || !policycatagory || !policypercentage || !rules  || !inputradio || !status || !count1) {
+    //         res.status(400)
+    //             .json({
+    //                 message: 'Invalid Request !'
+    //             });
+
+    //     } else {
+    //         updatetpareject.updatetpareject( policyid, policyName, policycatagory, policypercentage, rules, inputradio, status, count1)
+    //         .then(result => {
+    //             console.log(result)
+    //             res.status(200).json({
+    //                 message: "Details updated successfully",
+    //                 result:result
+    //             });
+    //         })
+    //         // .then(result => {
+    //         //     console.log("result....", result)
+
+    //         // })
+    
+    //         // notifyApprove.notifyApprove(policyid, policyName, policycatagory, policypercentage, rules, inputradio, status, count1)
+    //         //     .then(result => {
+
+                  
+    //         //         console.log("result....123>>>", result);
+    //         //         res.status(result.status).json({
+    //         //             result: result,
+
+    //         //         })
+    //         //     })
+    //         //             .catch(err => res.status(err.status).json({
+    //         //                 message: err.message
+    //         //             }).json({
+    //         //                 status: err.status
+    //         //             }));
+
+
+                
+
+
+    //     }
+    // });
+    router.post('/notifyReject', cors(), (req, res) => {
+        console.log("UI", req.body);
+
+        var policyid = req.body.policyid;
+        console.log(policyid);
+        var policyName = req.body.policyName;
+        console.log(policyName);
+        var policycatagory = req.body.policycatagory;
+        console.log(policycatagory);
+
+        var policypercentage = req.body.policypercentage;
+        console.log(policypercentage);
+
+        var rules = req.body.rules;
+        console.log(rules);
+
+       
+        var inputradio = req.body.inputradio;
+        console.log("inputradio", inputradio);
+
+        const registername = req.body.registername;
+       console.log("registername", registername);
+
+        const status = "Rejected";
+        console.log("Status..<<<", status);
+
+        count1 = count1 + 1
+        console.log("count", count1)
+
+        if (!policyid || !policyName || !policycatagory || !policypercentage || !rules  || !inputradio || !status || !count1 || !registername) {
+            res.status(400)
+                .json({
+                    message: 'Invalid Request !'
+                });
+
+        } else {
+            updatetpareject.updatetpareject( policyid, policyName, policycatagory, policypercentage, rules, inputradio, status, count1, registername)
+            .then(result => {
+                console.log(result)
+                res.send({
+                    message: "Details updated successfully",
+                    result:result
+                });
+            })
+            // .then(result => {
+            //     console.log("result....", result)
+
+            // })
+    
+            // notifyApprove.notifyApprove(policyid, policyName, policycatagory, policypercentage, rules, inputradio, status, count1)
+            //     .then(result => {
+
+                  
+            //         console.log("result....123>>>", result);
+            //         res.status(result.status).json({
+            //             result: result,
+
+            //         })
+            //     })
+            //             .catch(err => res.status(err.status).json({
+            //                 message: err.message
+            //             }).json({
+            //                 status: err.status
+            //             }));
+
+
+                
+
+
+        }
+    });
+
+
+
+    //============================GET COUNT START==========================================
 router.get('/getCount', cors(), function (req, res) {
     console.log("get count console", count)
     //res.sendStatus(count)
@@ -1035,6 +1286,31 @@ router.get('/getCount1', cors(), function (req, res) {
 
     res.send({
         "count1": count1
+    })
+})
+//============================================GET COUNT END===============================================//
+
+//============================GET COUNT START==========================================
+router.get('/getCount2', cors(), function (req, res) {
+    console.log("get count2 console", count2)
+    //res.sendStatus(count)
+    //res.status(200).send(count)
+    // result = count
+
+    res.send({
+        "count2": count2
+    })
+})
+//============================================GET COUNT END===============================================//
+ //============================GET COUNT START==========================================
+ router.get('/getCount3', cors(), function (req, res) {
+    console.log("get count3 console", count3)
+    //res.sendStatus(count)
+    //res.status(200).send(count)
+    // result = count
+
+    res.send({
+        "count3": count3
     })
 })
 //============================================GET COUNT END===============================================//
@@ -1099,8 +1375,10 @@ router.get('/getCount1', cors(), function (req, res) {
         console.log("startKey", startKey);
         var endKey = 'PCI999';
         console.log("endKey--", endKey);
-
-        getusernotification.getusernotification(startKey, endKey)
+        decreasecount= count1-1;
+        console.log("decreasecount--", decreasecount);
+        getusernotification.getusernotification(startKey, endKey,decreasecount)
+        
             .then(function (result) {
 
                 console.log("  result.query1234..>>>", result.query);

@@ -62,19 +62,20 @@
 //     }
 'use strict';
 var bcSdk = require('../fabcar/invoke.js');
-const tpaupdate= require('../models/updatetpa')
-exports.updatetpa=(patientData,submitID,groupID, AmountPayerWouldPay, AmountuserHavetopay, message, status,rating)=>{
+//const tpaupdate= require('../models/updatetpa')
+exports.updatetpa=(patientData,submitID, AmountPayerWouldPay, AmountuserHavetopay, message, status,rating,count2)=>{
 
     return new Promise((resolve,reject)=>{
-        var newupdate = new tpaupdate({
+        var newupdate =({
             "patientData":patientData,
             "submitID": submitID, 
             "status":status,
             "message": message,
             "AmountPayerWouldPay":AmountPayerWouldPay,
             "AmountuserHavetopay":AmountuserHavetopay,
-            "groupID":groupID,
-            "rating":rating
+            // "groupID":groupID,
+            "rating":rating,
+            "count2":count2
         })
         var data3  = {updatedetails:{
                    
@@ -84,13 +85,13 @@ exports.updatetpa=(patientData,submitID,groupID, AmountPayerWouldPay, Amountuser
             }}
      
 console.log("data3===>",data3);
-        newupdate.save()
-        .then(
-            bcSdk.updatetransaction(data3))
-            .then(() => resolve({
+        //newupdate.save()
+      
+            bcSdk.updatetransaction(data3)
+           resolve({
                 status: 201,
                 message: 'Patient details saved'
-            }))
+            })
 
             .catch(err =>{ 
 

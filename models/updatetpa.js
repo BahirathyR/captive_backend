@@ -2,13 +2,13 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 const tpa1Schema = mongoose.Schema({
-    patientData:Object,
+    patientData:String,
     submitID: String, 
     status:String,
     message: String,
     AmountPayerWouldPay:String,
     AmountuserHavetopay:String,
-    groupID:String,
+    // groupID:String,
     rating:Number
 });
 mongoose.Promise = global.Promise;

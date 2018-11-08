@@ -3,13 +3,13 @@ var Patient = require('../models/Tpa');
 var hold = require('../models/hold')
 var bcSdk = require('../fabcar/invoke')
 
-exports.autotpa = (s, claimamount, claimAmount, submitID) => {
-    console.log("claimamount", claimamount)
-    console.log("claimAmount", claimAmount)
+exports.autotpa = (s, AmountPayerWouldPay, claimAmount, submitID) => {
+    // console.log("claimamount", claimamount)
+    // console.log("claimAmount", claimAmount)
 
     return new Promise((resolve, reject) => {
 
-        if (claimAmount > claimamount) {
+        if ( AmountPayerWouldPay < claimAmount) {
 
             var data = new hold({
 
@@ -18,7 +18,7 @@ exports.autotpa = (s, claimamount, claimAmount, submitID) => {
                 "claimAmount": claimAmount,
                 "status": "waiting for TPA approval",
                 "message": "Hold",
-                "Expenses": claimamount,
+                "Expenses": AmountPayerWouldPay,
                 "AmountPayerWouldPay": "hold",
                 "AmountuserHavetopay": "hold",
 
@@ -80,9 +80,9 @@ exports.autotpa = (s, claimamount, claimAmount, submitID) => {
                 "claimAmount": claimAmount,
                 "status": "Auto approved",
                 "message": "approved",
-                "Expenses": claimamount,
-                "AmountPayerWouldPay": claimamount,
-                "AmountuserHavetopay": claimAmount - claimamount,
+                "Expenses": claimAmount,
+                "AmountPayerWouldPay":claimAmount,
+                "AmountuserHavetopay": 0,
 
                 created_at: new Date()
             });
